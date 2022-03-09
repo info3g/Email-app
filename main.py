@@ -1,22 +1,6 @@
 from flask import Flask, render_template
 from flask_mail import Mail,Message
 import os
-
-
-# password='indybytes@123'
-# user = 'rajendra.indybytes@gmail.com'
-
-
-
-# Importing libraries
-# import imaplib, email
- 
-# user = 'rajendra.indybytes@gmail.com'
-# password = 'indybytes@123'
-# imap_url = 'imap.gmail.com'
- 
-# Function to get email content part i.e its body part
-
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -25,101 +9,138 @@ import os.path
 import base64
 import email
 from bs4 import BeautifulSoup
+import imaplib
+from email.header import decode_header
+from flask import Flask, redirect, url_for, request
+
 app = Flask(__name__) 
 # Define the SCOPES. If modifying it, delete the token.pickle file.
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
-@app.route('/index.html')
-def getEmails():
-    
-    creds = None
-  
-    # The file token.pickle contains the user access token.
-    # Check if it exists
-    if os.path.exists('token.pickle'):
-  
-        # Read the token from the file and store it in the variable creds
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-  
-    # If credentials are not available or are invalid, ask the user to log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            
-            creds = flow.run_local_server(port=0)
-  
-        # Save the access token in token.pickle file for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-  
-    # Connect to the Gmail API
-    service = build('gmail', 'v1', credentials=creds)
-  
-    # request a list of all the messages
-    result = service.users().messages().list(userId='me').execute()
-  
-    # We can also pass maxResults to get any number of emails. Like this:
-    # result = service.users().messages().list(maxResults=200, userId='me').execute()
-    messages = result.get('messages')
-  
-    # messages is a list of dictionaries where each dictionary contains a message id.
-  
-    # iterate through all the messages
 
-    for msg in messages:
+import imaplib
+import email
+from email.header import decode_header
+import webbrowser
+import os
 
-        # Get the message from its id
-        txt = service.users().messages().get(userId='me', id=msg['id']).execute()
-  
-        # Use try-except to avoid any Errors
-        try:
-            # Get value of 'payload' from dictionary 'txt'
-            payload = txt['payload']
-            headers = payload['headers']
-  
-            # Look for Subject and Sender Email in the headers
-            for d in headers:
-                if d['name'] == 'Subject':
-                    subject = d['value']
-                if d['name'] == 'From':
-                    sender = d['value']
-  
-            # The Body of the message is in Encrypted format. So, we have to decode it.
-            # Get the data and decode it with base 64 decoder.
-            parts = payload.get('parts')[0]
-            data = parts['body']['data']
-            data = data.replace("-","+").replace("_","/")
-            decoded_data = base64.b64decode(data)
-            # Now, the data obtained is in lxml. So, we will parse 
-            # it with BeautifulSoup library
-            soup = BeautifulSoup(decoded_data , "lxml")
-            body = soup.body()
-#             print(soup)
-            # Printing the subject, sender's email and message
-            Subject= subject
-            print("Subject=========",Subject)
-            From= sender.replace(' <',' ').replace('>',' ')
-            print("From:**********",From)
-            Message=str(body).replace('[<p>',' ').replace('</p>]',' ')
-            print("Message:&&&&&&&&&&&&&",Message)
-            Date=Date
-            print("Date:--------------",Date)
-            print('\n')
-            # return render_template('index.html',Subjects=Subject,Froms=From,Messages=Message)       
-        except:
-            pass
-        return render_template('index.html',Subjects=Subject,Froms=From,Messages=Message)
-getEmails()
-         
-# user="puneet"
-# @app.route('/index.html')
-# def send_mail():
-#     return render_template('index.html',username=user)
+# account credentials
+username = "rajendra.indybytes@gmail.com"
+password = "indybytes@123"
+
+@app.route('/index',methods = ['POST', 'GET'])
+
+def getemails():
+    if request.method == 'GET':
+        all_data=[]
+        subjects=[]
+        Froms=[]
+        Dates=[]
+        def clean(text):
+        #     clean text for creating a folder
+            return "".join(c if c.isalnum() else "_" for c in text)
+        # create an IMAP4 class with SSL 
+        imap = imaplib.IMAP4_SSL("imap.gmail.com")
+        # authenticate
+        imap.login(username, password)
+        status, messages = imap.select("INBOX")
+        # number of top emails to fetch
+        N = 100000000000
+        # total number of emails
+        messages = int(messages[0])
 
 
 
+        for i in range(messages, messages-N, -1):
+            # fetch the email message by ID\
+            try:
+                res, msg = imap.fetch(str(i), "(RFC822)")
+                for response in msg:
+                    if isinstance(response, tuple):
+                        # parse a bytes email into a message object
+                        msg = email.message_from_bytes(response[1])
+                        # decode the email subject
+                        subject, encoding = decode_header(msg["Subject"])[0]
+                        if isinstance(subject, bytes):
+                            # if it's a bytes, decode to str
+                            subject = subject.decode(encoding="utf-8")
+                        Date, encoding = decode_header(msg["Date"])[0]
+                        if isinstance(subject, bytes):
+                            # if it's a bytes, decode to str
+                            Date = Date.decode(encoding="utf-8")
+                        # decode email sender
+                        From, encoding = decode_header(msg.get("From"))[0]
+                        if isinstance(From, bytes):
+                            From = From.decode(encoding)
+                        Subject=subject
+                        subjects.append(Subject)
+                        print("Subject:$$$$$$$$$$$$$$$$$", subject)
+                        From=From
+                        Froms.append(From)
+                        print("From:&&&&&&&&&&&&&&&&&&&", From)
+                        Date=Date
+                        Dates.append(Date)
+                        print("date:###################",Date)
+                        # if the email message is multipart
+                        if msg.is_multipart():
+                            # iterate over email parts
+                            for part in msg.walk():
+                                # extract content type of email
+                                content_type = part.get_content_type()
+                                content_disposition = str(part.get("Content-Disposition"))
+                                try:
+                                    # get the email body
+                                    body = part.get_payload(decode=True).decode()
+                                except:
+                                    pass
+                                if content_type == "text/plain" and "attachment" not in content_disposition:
+                                    # print text/plain emails and skip attachments
+                                    Message=body
+                                    print("Message:@@@@@@@@@@@@@@@@@@@@@@@@@@",body)
+                                    all_data.append(Message)
+            #                     elif "attachment" in content_disposition:
+            #                         # download attachment
+            #                         filename = part.get_filename()
+            #                         if filename:
+            #                             folder_name = clean(subject)
+            #                             if not os.path.isdir(folder_name):
+            #                                 # make a folder for this email (named after the subject)
+            #                                 os.mkdir(folder_name)
+            #                             filepath = os.path.join(folder_name, filename)
+            #                             # download attachment and save it
+            #                             open(filepath, "wb").write(part.get_payload(decode=True))
+                        else:
+                            # extract content type of email
+                            content_type = msg.get_content_type()
+                            # get the email body
+                            body = msg.get_payload(decode=True).decode()
+                            if content_type == "text/plain":
+                                # print only text email parts
+                                print(body)
+            #             if content_type == "text/html":
+            #                 # if it's HTML, create a new HTML file and open it in browser
+            #                 folder_name = clean(subject)
+            #                 if not os.path.isdir(folder_name):
+            #                     # make a folder for this email (named after the subject)
+            #                     os.mkdir(folder_name)
+            #                 filename = "index.txt"
+            #                 filepath = os.path.join(folder_name, filename)
+            #                 # write the file
+            #                 open(filepath, "w",encoding="utf-8").write(body)
+                            # open in the default browser
+            #                 webbrowser.open(filepath)
+                        print("="*100)
+            except:
+                break
+        # close the connection and logout
+        imap.close()
+        imap.logout()
+        return render_template("index.html",Subject=subjects, Formm=Froms,date=Dates,all_datas = all_data)
 
 app.run(debug=True)
+    
+
+
+
+
+
