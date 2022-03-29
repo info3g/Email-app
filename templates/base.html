@@ -21,7 +21,7 @@
     <div class="navbar-nav" style="text-align:center;">
       <a class="nav-item nav-link active" href="/">Register <span class="sr-only">(current)</span></a>
      
-      {%if session['email'] %}
+      {%if session['email'] %}     
       <a class="nav-item nav-link" href="/logout">Logout</a>   
        {%else%}
        <a class="nav-item nav-link" href="/login">Login</a> 

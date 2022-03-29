@@ -189,30 +189,31 @@ def ReadEmail():
         password=i["Gmailpass"]
         team=i["Teamname"]
     
-    data= db.register.find({"email": "vandana.indybytes@gmail.com"})
-    for i in data:
-        team=i['Teamname']
-    print(team,"dkjfhksdjhfkjsh")
-    # checking email of team members
-    check =  db.register.find({"Teamname":team})
-    checkemails=[]
-    for x in check:
-        data=x['email']
-        checkemails.append(data)
-        print(checkemails,"email to be checked")
-    # checking messageg of team members
+    # data= mydb.register.find({"email":username})
     msglst=[]
     msg = db.emailData.find()
     for msgdata in msg:
         msgd=msgdata['message']
         msglst.append(msgd)
-    print(msglst,"list msg ***********************************************")
+    for i in data:
+        team=i['Teamname']
+
+    check = db.register.find({"Teamname":team})
+    checkemails=[]
+    for x in check:
+        data=x['email']
+        checkemails.append(data)
+        
+    print(checkemails,"email to be checked")
+    today = date.today()
+    daata= today-timedelta(90)
+    date_format = "%d-%b-%Y"
     def clean(text):
     #     clean text for creating a folder
         return "".join(c if c.isalnum() else "_" for c in text)
     # create an IMAP4 class with SSL 
     imap = imaplib.IMAP4_SSL("imap.gmail.com")
-# authenticate
+    # authenticate
     imap.login(username, password)
     imap.select("INBOX")
     status, messages = imap.select("INBOX")
@@ -221,15 +222,18 @@ def ReadEmail():
     # total number of emails
     messages = int(messages[0])
     print(messages)
-
-    # calculating 90 days from current date
     currentdate = date.today()
-    daata= currentdate-timedelta(90)
-    # delta = currentdate - daata       # as timedelta
+    daata= today-timedelta(90)
+    delta = currentdate - daata       # as timedelta
     d=str(daata.strftime(" %d-%b-%Y"))
+    print(d)
+    # lst=[]
+    # for i in range(delta.days + 1):
+    #     day = daata + timedelta(days=i)
+    
+    #     lst.append(day.strftime(" %d-%b-%Y"))
 
-    # fetching emails of 90 days
-
+    fname=[]
     typ, data = imap.search(None,'(SINCE "{}")'.format(d.strip())) 
     msglist=[]
     s=data[0].split()
@@ -237,119 +241,115 @@ def ReadEmail():
         p=s[i].decode('utf8')
         msglist.append(p)
     print(msglist)
-
     for i in msglist:
         # fetch the email message by ID\
-        try:
-            res, msg = imap.fetch(str(i), "(RFC822)")
-            for response in msg:
-                if isinstance(response, tuple):
-                    # parse a bytes email into a message object
-                    msg = email.message_from_bytes(response[1])
+        res, msg = imap.fetch(str(i), "(RFC822)")
+        for response in msg:
+            if isinstance(response, tuple):
+                # parse a bytes email into a message object
+                msg = email.message_from_bytes(response[1])
+
+                # decode the email subject
+                subject, encoding = decode_header(msg["Subject"])[0]
+                if isinstance(subject, bytes):
+                    # if it's a bytes, decode to str
+                    subject = subject.decode(encoding="utf-8")
+                Date, encoding = decode_header(msg["Date"])[0]
+                if isinstance(Date, bytes):
+                    # if it's a bytes, decode to str
+                    Date = Date.decode(encoding="utf-8")
+                # decode email sender
+                From, encoding = decode_header(msg.get("From"))[0]
+                if isinstance(From, bytes):
+                    From = From.decode(encoding)
+    #               
+                if len(From.split())==2:
+                    Firstname=From.split()[0]
+                    print("Firstname:))))))))))", Firstname)
+                if len(From.split())==2:
+                    From=From.split()[1].replace('<',' ').replace('>',' ')
+                    print("From:))))))))))", From)
+                if len(From.split())==3:
+                    Firstname=From.split()[0]
+                    print("Firstname:))))))))))", Firstname)
+                    Lastname=From.split()[1]
+                    print("Lastname:))))))))))", Lastname)
+                    From=From.split()[2].replace('<',' ').replace('>',' ')
+                    print("From:))))))))))", From)
+                if len(From.split())==4:
+                    Firstname=From.split()[0]
+                    print("Firstname:))))))))))", Firstname)
+                    Lastname=From.split()[1]
+                    print("Lastname:))))))))))", Lastname)
+                    Lastname=From.split()[2]
+                    print("Lastname:))))))))))", Lastname)
+                    From=From.split()[3].replace('<',' ').replace('>',' ')
+                    print("From:))))))))))", From)
+
+
+                Subject=subject
+                print("Subject:$$$$$$$$$$$$$$$$$", subject)              
+                Date=Date
+                print("date:###################",Date)
                 
-                    # decode the email subject
-                    subject, encoding = decode_header(msg["Subject"])[0]
-                    if isinstance(subject, bytes):
-                        # if it's a bytes, decode to str
-                        subject = subject.decode(encoding="utf-8")
-                    Date, encoding = decode_header(msg["Date"])[0]
-                    if isinstance(Date, bytes):
-                        # if it's a bytes, decode to str
-                        Date = Date.decode(encoding="utf-8")
-                    # decode email sender
-                    From, encoding = decode_header(msg.get("From"))[0]
-                    if isinstance(From, bytes):
-                        From = From.decode(encoding)
-             
-                    if len(From.split())==2:
-                        Firstname=From.split()[0]
-                        print("Firstname:))))))))))", Firstname)
-                    if len(From.split())==2:
-                        From=From.split()[1].replace('<',' ').replace('>',' ')
-                        print("From:))))))))))", From)
-                    if len(From.split())==3:
-                        Firstname=From.split()[0]
-                        print("Firstname:))))))))))", Firstname)
-                        Lastname=From.split()[1]
-                        print("Lastname:))))))))))", Lastname)
-                        From=From.split()[2].replace('<',' ').replace('>',' ')
-                        print("From:))))))))))", From)
-                    if len(From.split())==4:
-                        Firstname=From.split()[0]
-                        print("Firstname:))))))))))", Firstname)
-                        Lastname=From.split()[1]
-                        print("Lastname:))))))))))", Lastname)
-                        Lastname=From.split()[2]
-                        print("Lastname:))))))))))", Lastname)
-                        From=From.split()[3].replace('<',' ').replace('>',' ')
-                        print("From:))))))))))", From)
-
-
-                    Subject=subject
-                                
-                    Date=Date
-                    
-                    
-                    # if the email message is multipart
-                    if msg.is_multipart():
-                        # iterate over email parts
-                        for part in msg.walk():
-                            # extract content type of email
-                            content_type = part.get_content_type()
-                            content_disposition = str(part.get("Content-Disposition"))
-                            try:
-                                # get the email body
-                                body = part.get_payload(decode=True).decode()
-                            except:
-                                pass
-                            if content_type == "text/plain" and "attachment" not in content_disposition:
-                                # print text/plain emails and skip attachments
-                                Message=body
-                                
-                                # code to store team members data to the database
+                if msg.is_multipart():
+                    print("------------------------------------------------------------------------------------")
+                    # iterate over email parts
+                    for part in msg.walk():
+                        filelst=[]
+                        content_type = part.get_content_type()
+                        content_disposition = str(part.get("Content-Disposition"))
+                        try:
+                            body = part.get_payload(decode=True).decode()
+    #                         print("bodybodybodybodybody",body)
+                        except:
+                            pass
+                        print("content_typecontent_typecontent_type",content_type)
+                        print("content_dispositioncontent_disposition",content_disposition)
+                        if content_type == "text/plain":
+                            Message=body
+    #                         print("MessageMessageMessageMessage",Message)
+                            if "attachment" in content_disposition:
+                                filename = part.get_filename()
+                                print("filenamefilenamefilenamefilename",filename)
                                 if Message not in msglst:
                                     if From.strip() in checkemails:
-                                        fname="None"
-                                        print("emailmatched.......")
-                                        mydict = {"firstname": Firstname, "lastname": Lastname,"teamname": team ,"From":From,"Reciever":username,"subject": subject,"message": body,"date":Date,"file":{"filename":fname,"hash_file":"None"}}
-                                        x = mycols.insert_one(mydict)
-                                        print("data inserted sucessfullly.....................................")
+                                        filepath="C:/Users/as/Desktop/Vandana/Email-app-main/media/"+str(filename)
+                                        sha256_hash = hashlib.sha256()
+                                        with open(filepath,"rb") as f:
+                                            # Read and update hash string value in blocks of 4K
+                                            for byte_block in iter(lambda: f.read(4096),b""):
+                                                sha256_hash.update(byte_block)
+                                                hash_file=sha256_hash.hexdigest()
+                                                print("hash_filehash_filehash_filehash_filehash_filehash_file",hash_file)
 
-    #                             
-                            elif "attachment" in content_disposition:
-                           # download email attachment
-                           
-                                filename = part.get_filename()
-                                if filename:
-                                    fname=filename
-                                  
-                                    # sha256_hash = hashlib.sha256()
-                                    # with open(fname,"rb") as f:
-                                    #     # Read and update hash string value in blocks of 4K
-                                    #     for byte_block in iter(lambda: f.read(4096),b""):
-                                    #         sha256_hash.update(byte_block)
-                                    #         hash_file=sha256_hash.hexdigest()
-                                    
-                                    # print(filename,"   ",hash_file,"###################################################################")
-                                    # download attachment and save it
-                                    filepath = os.path.join("media", filename)
-                                    open(filepath, "wb").write(part.get_payload(decode=True))
-                                            # mydict = {"firstname": Firstname, "lastname": Lastname,"teamname": team ,"From":From,"Reciever":username,"subject": subject,"message": body,"date":Date,"file":{"filename":fname,"hash_file":"None"}}
-                                            # x = mycols.insert_one(mydict)
-                            
-                    else:
-                        # extract content type of email
-                        content_type = msg.get_content_type()
-                        # get the email body
-                        body = msg.get_payload(decode=True).decode()
-                        if content_type == "text/plain":
-                            # print only text email parts
-                            print(body)
-     
-                    print("="*100)
-        except:
-            break
-    # close the connection and logout
+    #                                     print("emailmatched.......")
+                                        mydict = {"firstname": Firstname, "lastname": Lastname,"teamname": team ,"From":From,"Reciever":username,"subject": subject,"message": body,"date":Date,"file":{"filename":fname,"hash_file":hash_file}}
+                                        x = mycols.insert_one(mydict)
+    #                                     print("data inserted sucessfullly.....................................")
+                            else:
+                                if Message not in msglst:
+
+                                    if From.strip() in checkemails:
+                                        print("MessageMessageMessageMessage",Message)
+                                        print("content_typecontent_typecontent_type",content_type)
+                                        print("content_dispositioncontent_disposition",content_disposition)
+                                        
+
+                                        mydict = {"firstname": Firstname, "lastname": Lastname,"teamname": team ,"From":From,"Reciever":username,"subject": subject,"message": body,"date":Date,"file":{"filename":"None","hash_file":"None"}}
+                                        x = mycols.insert_one(mydict)
+    #                                     print("data inserted sucessfullly.....................................")
+                else:
+                    # extract content type of email
+                    content_type = msg.get_content_type()
+                    # get the email body
+                    try:
+                        body = part.get_payload(decode=True).decode()
+                        print("bodybodybodybodybody",body)
+                    except:
+                        pass
+                
+                        
     imap.close()
     imap.logout()
 
